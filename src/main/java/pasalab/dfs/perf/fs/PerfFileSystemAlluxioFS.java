@@ -1,67 +1,57 @@
 package pasalab.dfs.perf.fs;
 
+import alluxio.AlluxioURI;
+import alluxio.client.file.FileSystem;
+import alluxio.client.file.URIStatus;
+import alluxio.conf.AlluxioConfiguration;
+import alluxio.exception.AlluxioException;
+import alluxio.exception.FileAlreadyExistsException;
+import alluxio.exception.FileDoesNotExistException;
+import alluxio.exception.InvalidPathException;
+import alluxio.grpc.*;
+import pasalab.dfs.perf.basic.TaskConfiguration;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import pasalab.dfs.perf.basic.TaskConfiguration;
-
-import alluxio.AlluxioURI;
-import alluxio.Configuration;
-import alluxio.PropertyKey;
-import alluxio.client.ClientContext;
-import alluxio.client.ReadType;
-import alluxio.client.file.FileSystem;
-import alluxio.client.WriteType;
-import alluxio.client.file.URIStatus;
-import alluxio.client.file.options.CreateDirectoryOptions;
-import alluxio.client.file.options.CreateFileOptions;
-import alluxio.client.file.options.DeleteOptions;
-import alluxio.client.file.options.OpenFileOptions;
-import alluxio.exception.AlluxioException;
-import alluxio.exception.FileAlreadyExistsException;
-import alluxio.exception.FileDoesNotExistException;
-import alluxio.exception.InvalidPathException;
+;
 
 public class PerfFileSystemAlluxioFS extends PerfFileSystem {
+
   public static PerfFileSystem getClient(String path, TaskConfiguration taskConf) {
     return new PerfFileSystemAlluxioFS(path, taskConf);
   }
 
-  private final OpenFileOptions mReadOptions;
-  private final CreateFileOptions mWriteOptions;
+  private final OpenFilePOptions mReadOptions;
+  private final CreateFilePOptions mWriteOptions;
   private FileSystem mAlluxioFs;
 
   private PerfFileSystemAlluxioFS(String path, TaskConfiguration taskConf) {
     int blockSizeByte;
-    ReadType readType;
-    WriteType writeType;
-    AlluxioURI uri = new AlluxioURI(path);
-
-    Configuration.set(PropertyKey.MASTER_HOSTNAME, uri.getHost());
-    Configuration.set(PropertyKey.MASTER_RPC_PORT, Integer.toString(uri.getPort()));
-    ClientContext.init();
+    ReadPType readType;
+    WritePType writeType;
 
     if (taskConf == null) {
       blockSizeByte = 1024 * 1024 * 1024;
-      readType = ReadType.CACHE_PROMOTE;
-      writeType = WriteType.ASYNC_THROUGH;
+      readType = ReadPType.CACHE_PROMOTE;
+      writeType = WritePType.ASYNC_THROUGH;
     } else {
       blockSizeByte =
           taskConf.hasProperty("block.size.bytes") ? taskConf.getIntProperty("block.size.bytes")
               : 1024 * 1024 * 1024;
       readType =
-          taskConf.hasProperty("read.type") ? ReadType.valueOf(taskConf.getProperty("read.type"))
-              : ReadType.CACHE_PROMOTE;
+          taskConf.hasProperty("read.type") ? ReadPType.valueOf(taskConf.getProperty("read.type"))
+              : ReadPType.CACHE_PROMOTE;
       writeType =
-          taskConf.hasProperty("write.type") ? WriteType.valueOf(taskConf.getProperty("write.type"))
-              : WriteType.ASYNC_THROUGH;
+          taskConf.hasProperty("write.type") ? WritePType.valueOf(taskConf.getProperty("write.type"))
+              : WritePType.ASYNC_THROUGH;
     }
 
-    mReadOptions = OpenFileOptions.defaults().setReadType(readType);
-    mWriteOptions = CreateFileOptions.defaults().setWriteType(writeType).setBlockSizeBytes(blockSizeByte);
+    mReadOptions = OpenFilePOptions.newBuilder().setReadType(readType).build();
+    mWriteOptions = CreateFilePOptions.newBuilder().setWriteType(writeType).setBlockSizeBytes(blockSizeByte).build();
   }
 
   @Override
@@ -86,7 +76,7 @@ public class PerfFileSystemAlluxioFS extends PerfFileSystem {
   @Override
   public boolean delete(String path, boolean recursive) throws IOException {
     try {
-      mAlluxioFs.delete(new AlluxioURI(path), DeleteOptions.defaults().setRecursive(true));
+      mAlluxioFs.delete(new AlluxioURI(path), DeletePOptions.newBuilder().setRecursive(true).build());
       return true;
     } catch (AlluxioException e) {
       return false;
@@ -194,7 +184,7 @@ public class PerfFileSystemAlluxioFS extends PerfFileSystem {
   public boolean mkdir(String path, boolean createParent) throws IOException {
     AlluxioURI uri = new AlluxioURI(path);
     try {
-      mAlluxioFs.createDirectory(uri, CreateDirectoryOptions.defaults().setRecursive(createParent));
+      mAlluxioFs.createDirectory(uri, CreateDirectoryPOptions.newBuilder().setRecursive(createParent).build());
       return true;
     } catch (InvalidPathException e) {
       return false;

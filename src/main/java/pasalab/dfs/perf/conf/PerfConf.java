@@ -11,13 +11,10 @@ import pasalab.dfs.perf.PerfConstants;
 public class PerfConf extends Utils {
   private static final Logger LOG = Logger.getLogger(PerfConstants.PERF_LOGGER_TYPE);
 
-  private static PerfConf sPerfConf = null;
+  private static final PerfConf S_PERF_CONF = new PerfConf();
 
-  public static synchronized PerfConf get() {
-    if (sPerfConf == null) {
-      sPerfConf = new PerfConf();
-    }
-    return sPerfConf;
+  public static PerfConf get() {
+    return S_PERF_CONF;
   }
 
   public final String DFS_PERF_HOME;

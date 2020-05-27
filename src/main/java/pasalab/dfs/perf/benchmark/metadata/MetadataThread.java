@@ -14,7 +14,8 @@ public class MetadataThread extends PerfThread {
   private int mOpTimeMs;
   private String mWorkDir;
 
-  private double mRate; // in ops/sec
+  // in ops/sec
+  private double mRate;
   private boolean mSuccess;
 
   public double getRate() {
@@ -51,7 +52,7 @@ public class MetadataThread extends PerfThread {
     try {
       mClients = new PerfFileSystem[mClientsNum];
       String dfsAddress = PerfConf.get().DFS_ADDRESS;
-      for (int i = 0; i < mClientsNum; i ++) {
+      for (int i = 0; i < mClientsNum; i++) {
         mClients[i] = Operators.connect(dfsAddress, taskConf);
       }
     } catch (IOException e) {
@@ -65,7 +66,7 @@ public class MetadataThread extends PerfThread {
 
   @Override
   public boolean cleanupThread(TaskConfiguration taskConf) {
-    for (int i = 0; i < mClientsNum; i ++) {
+    for (int i = 0; i < mClientsNum; i++) {
       try {
         Operators.close(mClients[i]);
       } catch (IOException e) {
